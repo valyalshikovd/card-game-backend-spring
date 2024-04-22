@@ -1,12 +1,26 @@
 package com.example.cardgame.controller;
 
+import com.example.cardgame.dto.ExtendedMessageDto;
 import com.example.cardgame.dto.Message;
+import com.example.cardgame.dto.MessageDto;
+import com.example.cardgame.service.SocketService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
+
 import java.io.IOException;
 
+
+@AllArgsConstructor
+@Component
 public class WebSocketHandler extends AbstractWebSocketHandler {
+
+    private SocketService socketService;
+    private ObjectMapper objectMapper;
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
         String msg = String.valueOf(message.getPayload());
@@ -14,31 +28,15 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         System.out.println(session);
         System.out.println(msg);
 
-
-        // Send back a unique message depending on the id received from the client
-        switch(msg){
-            case("1"):
-                System.out.println("WebSocket" + "Dog button was pressed");
-                session.sendMessage(new TextMessage("Woooof"));
-                break;
-
-            case("2"):
-                System.out.println("WebSocket"+  "Cat button was pressed");
-                session.sendMessage(new TextMessage("Meooow"));
-                break;
-
-            case("3"):
-                System.out.println("WebSocket"+  "Pig button was pressed");
-                session.sendMessage(new TextMessage("Bork Bork"));
-                break;
-
-            case("4"):
-                System.out.println("WebSocket"+  "Fox button was pressed");
-                session.sendMessage(new TextMessage("Fraka-kaka-kaka"));
-                break;
-
-            default:
-                System.out.println("WebSocket" + "Connected to Client");
+        try {
+            System.out.println(new ObjectMapper().readValue(msg, MessageDto.class));
+        } catch (Exception e) {
+            System.out.println("-");
         }
+
+
+        socketService.getMessage(new ExtendedMessageDto(objectMapper.readValue(msg, MessageDto.class), session));
+
     }
 }
+

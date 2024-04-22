@@ -1,6 +1,7 @@
 package com.example.cardgame.game;
 
 
+import com.example.cardgame.dto.RoomDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,5 +31,10 @@ public class Room {
     public User remove(String string){
         return users.remove(string);
     }
-
+    public RoomDto mapToRoomDto(){
+        return new RoomDto(roomName, status, users.size());
+    }
+    public List<User> getUsers(){
+        return new ArrayList<>(users.values());
+    }
 }
