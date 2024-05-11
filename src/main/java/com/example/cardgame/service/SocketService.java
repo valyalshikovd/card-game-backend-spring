@@ -1,8 +1,8 @@
 package com.example.cardgame.service;
 
-import com.example.cardgame.dto.ExtendedMessageDto;
+import com.example.cardgame.dto.message.ExtendedMessageDto;
 
 public interface SocketService {
 
-    public String getMessage(ExtendedMessageDto message);
+    public void getMessage(ExtendedMessageDto message);
 }

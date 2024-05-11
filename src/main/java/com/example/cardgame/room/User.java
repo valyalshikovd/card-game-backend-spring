@@ -1,8 +1,6 @@
-package com.example.cardgame.game;
+package com.example.cardgame.room;
 
-import com.example.cardgame.controller.WebSocketHandler;
 import com.example.cardgame.dto.UserDto;
-import jakarta.websocket.Session;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.web.socket.WebSocketSession;
@@ -12,10 +10,11 @@ import org.springframework.web.socket.WebSocketSession;
 @AllArgsConstructor
 public class User {
     private String name;
+    private UserStatus status = UserStatus.UNREADY;
     private WebSocketSession session;
 
 
     public UserDto mapToUserDto(){
-        return new UserDto(name);
+        return new UserDto(name, status);
     }
 }

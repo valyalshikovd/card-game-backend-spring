@@ -1,7 +1,7 @@
 package com.example.cardgame.service;
 
 import com.example.cardgame.dto.RoomDto;
-import com.example.cardgame.game.Room;
+import com.example.cardgame.room.Room;
 
 import java.util.List;
 
