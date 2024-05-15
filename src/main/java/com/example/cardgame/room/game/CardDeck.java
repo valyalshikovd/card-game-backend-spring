@@ -1,12 +1,17 @@
 package com.example.cardgame.room.game;
 
+import lombok.Getter;
+
 import java.util.*;
 
 public class CardDeck {
 
+    @Getter
+    public Card trampCard = null;
+
+    @Getter
     public final Stack<Card> cards = generateDeck();
 
-    public Card trampCard = null;
 
 
 

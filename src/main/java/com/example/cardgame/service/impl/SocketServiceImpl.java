@@ -3,11 +3,14 @@ package com.example.cardgame.service.impl;
 
 import com.example.cardgame.dto.message.ExtendedMessageDto;
 import com.example.cardgame.dto.message.MessageDto;
+import com.example.cardgame.dto.message.SentMessageDto;
+import com.example.cardgame.dto.message.gameDto.GameStepInfoDto;
 import com.example.cardgame.room.Room;
 import com.example.cardgame.room.User;
 import com.example.cardgame.room.UserStatus;
 import com.example.cardgame.service.RoomService;
 import com.example.cardgame.service.SocketService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,8 @@ public class SocketServiceImpl implements SocketService {
         runnableMap.put("connecting", this::connect);
         runnableMap.put("readyToPlay", this::readyToPlay);
         runnableMap.put("unreadyToPlay", this::unreadyToPlay);
+        runnableMap.put("getGameState", this::getGameState);
+        runnableMap.put("gameStep", this::gameStep);
     }
 
     public interface MessageProcessor {
@@ -53,21 +58,14 @@ public class SocketServiceImpl implements SocketService {
 
         log.info("Регистрация пользователя: " + extendedMessageDto.getMessageDto().getUserName());
         try {
-            extendedMessageDto.getSession().sendMessage(new TextMessage("Попытка регистрации пользователя"));
+            extendedMessageDto.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(new SentMessageDto("textNotification", "Попытка регистрации пользователя"))));
             Room currentRoom = roomService.getRoomByStringId(extendedMessageDto.getRoomName());
             currentRoom.add(
                     new User(extendedMessageDto.getUserName(),UserStatus.UNREADY, extendedMessageDto.getSession())
             );
             System.out.println(currentRoom.getUsers());
 
-            for(User user: currentRoom.getUsers()){
-                try{
-                    System.out.println("отправка");
-                    user.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(new MessageDto())));
-                }catch (Exception e){
-                    log.error("ошибка в отправке сообщения пользователю: " + user.getName() );
-                }
-            }
+            emitToAllUserInRoom(currentRoom, new SentMessageDto("addNotification", "В комнату присоединился игрок: " + extendedMessageDto.getUserName()));
             log.info("Регистрация пользователя " + extendedMessageDto.getUserName() + " успешна");
 
 
@@ -78,7 +76,7 @@ public class SocketServiceImpl implements SocketService {
 
     private void connect(ExtendedMessageDto extendedMessageDto){
         try {
-            extendedMessageDto.getSession().sendMessage(new TextMessage("Success"));
+            extendedMessageDto.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(new SentMessageDto("textNotification", "Success"))));
             log.info("Сокет " + extendedMessageDto.getSession().getId() + " был подключен успешно");
         } catch (IOException e) {
             log.error("Сокет " + extendedMessageDto.getSession().getId() + " не был подключен успешно");
@@ -91,8 +89,9 @@ public class SocketServiceImpl implements SocketService {
         Room currentRoom = roomService.getRoomByStringId(extendedMessageDto.getRoomName());
         try{
             currentRoom
-                    .getUser(extendedMessageDto.getUserName())
+                    .getUser(extendedMessageDto.getSession().getId())
                     .setStatus(UserStatus.READY);
+            emitToAllUserInRoom(currentRoom, new SentMessageDto("addNotification", "Игрок " + extendedMessageDto.getUserName() + " готов" ));
 
             if (currentRoom.checkReady()){
                 currentRoom.start();
@@ -102,6 +101,7 @@ public class SocketServiceImpl implements SocketService {
             log.info("Ошибка принятия готовности игрока " + extendedMessageDto.getUserName());
 
         }
+
     }
 
     private void unreadyToPlay(ExtendedMessageDto extendedMessageDto){
@@ -109,11 +109,51 @@ public class SocketServiceImpl implements SocketService {
         Room currentRoom = roomService.getRoomByStringId(extendedMessageDto.getRoomName());
         try{
             currentRoom
-                    .getUser(extendedMessageDto.getUserName())
+                    .getUser(extendedMessageDto.getSession().getId())
                     .setStatus(UserStatus.UNREADY);
-
+            emitToAllUserInRoom(currentRoom, new SentMessageDto("addNotification", "Игрок " + extendedMessageDto.getUserName() + "не готов" ));
         }catch (Exception e){
             log.info("Ошибка принятия готовности игрока " + extendedMessageDto.getUserName());
         }
+    }
+
+    private void emitToAllUserInRoom(Room currentRoom, SentMessageDto sentMessageDto){
+        for(User user: currentRoom.getUsers()){
+            try{
+                System.out.println("отправка");
+                user.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(sentMessageDto)));
+                //user.getSession().sendMessage(new TextMessage("В комнату присоединился игрок: " + extendedMessageDto.getUserName()));
+            }catch (Exception e){
+                log.error("ошибка в отправке сообщения пользователю: " + user.getName() );
+            }
+        }
+    }
+
+    private void getGameState(ExtendedMessageDto extendedMessageDto){
+
+        try {
+            roomService.getRoomByStringId(extendedMessageDto.getRoomName()).getGameState();
+        }catch (Exception e){
+
+
+            log.error("ошибка в отправке запроса на получения состояния игры: " + extendedMessageDto.getRoomName() );
+        }
+
+    }
+
+
+    private void gameStep(ExtendedMessageDto extendedMessageDto){
+        try {
+
+
+
+            GameStepInfoDto gameStepInfoDto = mapper.readValue(extendedMessageDto.getPayload(), GameStepInfoDto.class);
+
+            roomService.getRoomByStringId(extendedMessageDto.getRoomName()).setStep(gameStepInfoDto, extendedMessageDto.getSession().getId());
+        }catch (Exception e){
+            log.error("ошибка в отправке запроса на получения состояния игры после совершения хода: " + extendedMessageDto.getRoomName() );
+            log.error(e.getMessage());
+        }
+
     }
 }

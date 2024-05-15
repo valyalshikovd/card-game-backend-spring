@@ -13,7 +13,10 @@ public class Player {
     @Getter
     @Setter
     private  User user;
-    public List<Card> cards = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private List<Card> cards = new ArrayList<>();
 
     public Player(User user) {
         this.user = user;

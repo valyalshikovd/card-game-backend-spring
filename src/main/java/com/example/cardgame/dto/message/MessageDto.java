@@ -12,4 +12,5 @@ public class MessageDto {
     private String room;
     private String userName;
     private String command;
+    private String payload;
 }

@@ -60,6 +60,5 @@ public class RoomController {
         }catch (Exception e){
             log.info("Запрос на удаление  комнаты: " + roomName + "выполнен неудачно");
         }
-
     }
 }

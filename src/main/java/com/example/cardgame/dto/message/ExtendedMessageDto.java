@@ -19,7 +19,11 @@ public class ExtendedMessageDto {
         return messageDto.getRoom();
     }
 
+
+
     public String getCommand(){
         return messageDto.getCommand();
     }
+
+    public String getPayload() {return messageDto.getPayload();}
 }
