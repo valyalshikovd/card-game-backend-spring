@@ -37,6 +37,9 @@ public class SocketServiceImpl implements SocketService {
         runnableMap.put("unreadyToPlay", this::unreadyToPlay);
         runnableMap.put("getGameState", this::getGameState);
         runnableMap.put("gameStep", this::gameStep);
+        runnableMap.put("pullOf", this::pullOf);
+        runnableMap.put("complete", this::complete);
+        runnableMap.put("surrender", this::surrender);
     }
 
     public interface MessageProcessor {
@@ -141,19 +144,40 @@ public class SocketServiceImpl implements SocketService {
 
     }
 
-
     private void gameStep(ExtendedMessageDto extendedMessageDto){
         try {
-
-
-
             GameStepInfoDto gameStepInfoDto = mapper.readValue(extendedMessageDto.getPayload(), GameStepInfoDto.class);
-
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).setStep(gameStepInfoDto, extendedMessageDto.getSession().getId());
         }catch (Exception e){
             log.error("ошибка в отправке запроса на получения состояния игры после совершения хода: " + extendedMessageDto.getRoomName() );
             log.error(e.getMessage());
         }
+    }
 
+    private void pullOf(ExtendedMessageDto extendedMessageDto){
+        try {
+            roomService.getRoomByStringId(extendedMessageDto.getRoomName()).pullOf(extendedMessageDto);
+        }catch (Exception e){
+            log.error("ошибка в отправке запроса на стягивание карты в комнате: " + extendedMessageDto.getRoomName() );
+            log.error(e.getMessage());
+        }
+    }
+
+    private void complete(ExtendedMessageDto extendedMessageDto){
+        try {
+            roomService.getRoomByStringId(extendedMessageDto.getRoomName()).complete(extendedMessageDto);
+        }catch (Exception e){
+            log.error("ошибка в отправке запроса на прерывание хода в комнате: " + extendedMessageDto.getRoomName() );
+            log.error(e.getMessage());
+        }
+    }
+
+    private void surrender(ExtendedMessageDto extendedMessageDto){
+        try{
+            roomService.getRoomByStringId(extendedMessageDto.getRoomName()).surrender(extendedMessageDto);
+        }catch (Exception e){
+            log.error("ошибка в отправке запроса на сдачу в комнате: " + extendedMessageDto.getRoomName() );
+            log.error(e.getMessage());
+        }
     }
 }

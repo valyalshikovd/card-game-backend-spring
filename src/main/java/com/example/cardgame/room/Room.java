@@ -2,6 +2,7 @@ package com.example.cardgame.room;
 
 
 import com.example.cardgame.dto.RoomDto;
+import com.example.cardgame.dto.message.ExtendedMessageDto;
 import com.example.cardgame.dto.message.SentMessageDto;
 import com.example.cardgame.dto.message.gameDto.GameStepInfoDto;
 import com.example.cardgame.dto.message.gameDto.OutputGameStateDto;
@@ -122,7 +123,12 @@ public class Room {
                                                         gameState.getCardDeck().getTrampCard(),
                                                         gameState.getCurrentPlayer().getUser().getSession().getId().equals(user.getSession().getId()),
                                                         gameState.getDefencePlayer().getUser().getSession().getId().equals(user.getSession().getId()),
-                                                        gameState.getCountCardsOnTable()
+                                                        gameState.getCountCardsOnTable(),
+                                                        gameState.areThereAnyUnbrokenCards(),
+                                                        gameState.getCountCardsInStack(),
+                                                        gameState.isDraw(),
+                                                        gameState.isGameOver(),
+                                                        gameState.isWinner(user)
                                                 ))))));
             }catch (Exception e){
                 System.out.println(e.getMessage());
@@ -139,4 +145,32 @@ public class Room {
         getGameState();
     }
 
+    public void pullOf(ExtendedMessageDto extendedMessageDto) {
+
+        User user = users.get(extendedMessageDto.getSession().getId());
+        if(user.getSession().getId().equals(extendedMessageDto.getSession().getId())){
+
+            gameState.pullOf(user);
+            getGameState();
+        }
+    }
+
+    public void complete(ExtendedMessageDto extendedMessageDto) {
+
+        User user = users.get(extendedMessageDto.getSession().getId());
+        if(user.getSession().getId().equals(extendedMessageDto.getSession().getId())){
+
+            gameState.complete(user);
+            getGameState();
+        }
+    }
+
+    public void surrender(ExtendedMessageDto extendedMessageDto) {
+        User user = users.get(extendedMessageDto.getSession().getId());
+        if(user.getSession().getId().equals(extendedMessageDto.getSession().getId())){
+
+            gameState.surrender(user);
+            getGameState();
+        }
+    }
 }

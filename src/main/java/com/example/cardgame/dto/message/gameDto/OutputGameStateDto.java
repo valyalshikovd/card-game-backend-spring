@@ -19,4 +19,9 @@ public class OutputGameStateDto {
     private boolean currentPlayer;
     private boolean deffencePlayer;
     private int countCardsOnTable;
+    private boolean areThereAnyUnbrokenCards;
+    private int countCardsInStack;
+    private boolean draw;
+    private boolean isGameOver;
+    private boolean isWinner;
 }

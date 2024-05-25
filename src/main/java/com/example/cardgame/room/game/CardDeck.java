@@ -13,8 +13,6 @@ public class CardDeck {
     public final Stack<Card> cards = generateDeck();
 
 
-
-
     private  Stack<Card> generateDeck(){
         List<Card> res = new ArrayList<>(36);
 
@@ -27,7 +25,7 @@ public class CardDeck {
 
         Collections.shuffle(res);
 
-        trampCard = res.get(35);
+        trampCard = res.get(0);
 
         Stack<Card> resultStack = new Stack<>();
         resultStack.addAll(res);
