@@ -24,4 +24,5 @@ public class OutputGameStateDto {
     private boolean draw;
     private boolean isGameOver;
     private boolean isWinner;
+    private int countCardAtOpp;
 }

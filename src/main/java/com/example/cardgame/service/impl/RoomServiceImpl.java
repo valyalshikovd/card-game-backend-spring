@@ -6,6 +6,7 @@ import com.example.cardgame.exception.roomException.RoomDoesntExistException;
 import com.example.cardgame.room.Room;
 import com.example.cardgame.service.RoomService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
@@ -48,4 +49,15 @@ public class RoomServiceImpl implements RoomService {
         log.info("Получение всех комнат");
         return activeRooms.values().stream().map(Room::mapToRoomDto).collect(Collectors.toList());
     }
+
+    @Scheduled(fixedRate = 30000)
+    private void checkVoidRooms(){
+
+        for(String key : activeRooms.keySet()){
+            if(activeRooms.get(key).getUsers().isEmpty()){
+                activeRooms.remove(key);
+            }
+        }
+    }
+
 }

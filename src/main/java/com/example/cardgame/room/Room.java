@@ -88,7 +88,7 @@ public class Room {
             ));
         } catch (Exception e) {
             log.error("Не удалось отправить сооьщение о старте игрку: " + user.getName());
-            System.out.println(e);
+            deleteUser(user);
             throw new RoomException("Не удалось отправить сооьщение о старте игрку: " + user.getName());
         }
     }
@@ -128,11 +128,12 @@ public class Room {
                                                         gameState.getCountCardsInStack(),
                                                         gameState.isDraw(),
                                                         gameState.isGameOver(),
-                                                        gameState.isWinner(user)
+                                                        gameState.isWinner(user),
+                                                        gameState.getCountCardsAtOpp(user.getSession().getId())
                                                 ))))));
             }catch (Exception e){
                 System.out.println(e.getMessage());
-                e.printStackTrace();
+                deleteUser(user);
                 log.error("Ошибка отправки состояния игры пользователю :" + user.getName());
             }
         }
@@ -171,6 +172,24 @@ public class Room {
 
             gameState.surrender(user);
             getGameState();
+        }
+        users.values().forEach(u -> u.setStatus(UserStatus.UNREADY));
+        gameState = null;
+    }
+
+    private void deleteUser(User user){
+        users.remove(user.getSession().getId());
+
+        for (User u : getUsers()) {
+            try {
+                u.getSession().sendMessage(new TextMessage(
+                        mapper.writeValueAsString(new SentMessageDto("addNotification", "Пользователь " + user.getName() + " был удален"))
+                ));
+            } catch (Exception e) {
+                log.error("Не удалось отправить сооьщение о старте игрку: " + u.getName());
+                deleteUser(u);
+                throw new RoomException("Не удалось отправить сооьщение о старте игрку: " + u.getName());
+            }
         }
     }
 }

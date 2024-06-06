@@ -42,6 +42,7 @@ public class SocketServiceImpl implements SocketService {
         runnableMap.put("surrender", this::surrender);
     }
 
+
     public interface MessageProcessor {
         void process(ExtendedMessageDto messageDto);
     }
@@ -125,8 +126,8 @@ public class SocketServiceImpl implements SocketService {
             try{
                 System.out.println("отправка");
                 user.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(sentMessageDto)));
-                //user.getSession().sendMessage(new TextMessage("В комнату присоединился игрок: " + extendedMessageDto.getUserName()));
             }catch (Exception e){
+                currentRoom.remove(user.getSession().getId());
                 log.error("ошибка в отправке сообщения пользователю: " + user.getName() );
             }
         }
@@ -137,7 +138,6 @@ public class SocketServiceImpl implements SocketService {
         try {
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).getGameState();
         }catch (Exception e){
-
 
             log.error("ошибка в отправке запроса на получения состояния игры: " + extendedMessageDto.getRoomName() );
         }
@@ -151,6 +151,7 @@ public class SocketServiceImpl implements SocketService {
         }catch (Exception e){
             log.error("ошибка в отправке запроса на получения состояния игры после совершения хода: " + extendedMessageDto.getRoomName() );
             log.error(e.getMessage());
+
         }
     }
 
@@ -180,4 +181,6 @@ public class SocketServiceImpl implements SocketService {
             log.error(e.getMessage());
         }
     }
+
+
 }

@@ -424,4 +424,14 @@ public class GameState {
         }
 
     }
+
+    public int getCountCardsAtOpp(String id) {
+        if(player1.getUser().getSession().getId().equals(id)){
+            return player2.getCards().size();
+        }
+        if(player2.getUser().getSession().getId().equals(id)){
+            return player1.getCards().size();
+        }
+        return 0;
+    }
 }
