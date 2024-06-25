@@ -12,9 +12,12 @@ import com.example.cardgame.service.RoomService;
 import com.example.cardgame.service.SocketService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.websocket.Session;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,6 +27,8 @@ import java.util.Map;
 @Slf4j
 public class SocketServiceImpl implements SocketService {
     private Map<String, MessageProcessor> runnableMap = new HashMap<>();
+
+    private Map<String, WebSocketSession> sessionMap = new HashMap<>();
     private final RoomService roomService;
     private final ObjectMapper mapper;
 
@@ -50,6 +55,9 @@ public class SocketServiceImpl implements SocketService {
     @Override
     public void getMessage(ExtendedMessageDto message) {
         try {
+            if(!sessionMap.containsKey(message.getSession().getId())){
+                sessionMap.put(message.getSession().getId(), message.getSession());
+            }
             log.info("Сообщение сокета обрабатывается SocketService");
             runnableMap.get(message.getCommand()).process(message);
         } catch (Exception e) {
@@ -64,6 +72,11 @@ public class SocketServiceImpl implements SocketService {
         try {
             extendedMessageDto.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(new SentMessageDto("textNotification", "Попытка регистрации пользователя"))));
             Room currentRoom = roomService.getRoomByStringId(extendedMessageDto.getRoomName());
+
+            if(currentRoom.getUsers().size() > 1){
+                log.error("При регистрации пользователя " + extendedMessageDto.getUserName() + " произошла ошибка: \n" + "Комната переполнена");
+                return;
+            }
             currentRoom.add(
                     new User(extendedMessageDto.getUserName(),UserStatus.UNREADY, extendedMessageDto.getSession())
             );
@@ -124,24 +137,20 @@ public class SocketServiceImpl implements SocketService {
     private void emitToAllUserInRoom(Room currentRoom, SentMessageDto sentMessageDto){
         for(User user: currentRoom.getUsers()){
             try{
-                System.out.println("отправка");
                 user.getSession().sendMessage(new TextMessage(mapper.writeValueAsString(sentMessageDto)));
             }catch (Exception e){
                 currentRoom.remove(user.getSession().getId());
-                log.error("ошибка в отправке сообщения пользователю: " + user.getName() );
+                log.error("error in sending message to user: " + user.getName() );
             }
         }
     }
 
     private void getGameState(ExtendedMessageDto extendedMessageDto){
-
         try {
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).getGameState();
         }catch (Exception e){
-
-            log.error("ошибка в отправке запроса на получения состояния игры: " + extendedMessageDto.getRoomName() );
+            log.error("error in sending a request to get the game state: " + extendedMessageDto.getRoomName() );
         }
-
     }
 
     private void gameStep(ExtendedMessageDto extendedMessageDto){
@@ -149,7 +158,7 @@ public class SocketServiceImpl implements SocketService {
             GameStepInfoDto gameStepInfoDto = mapper.readValue(extendedMessageDto.getPayload(), GameStepInfoDto.class);
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).setStep(gameStepInfoDto, extendedMessageDto.getSession().getId());
         }catch (Exception e){
-            log.error("ошибка в отправке запроса на получения состояния игры после совершения хода: " + extendedMessageDto.getRoomName() );
+            log.error("error in sending a request to get the game state after making a move: " + extendedMessageDto.getRoomName() );
             log.error(e.getMessage());
 
         }
@@ -159,7 +168,7 @@ public class SocketServiceImpl implements SocketService {
         try {
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).pullOf(extendedMessageDto);
         }catch (Exception e){
-            log.error("ошибка в отправке запроса на стягивание карты в комнате: " + extendedMessageDto.getRoomName() );
+            log.error("error in sending a request to draw a card in a room: " + extendedMessageDto.getRoomName() );
             log.error(e.getMessage());
         }
     }
@@ -168,7 +177,7 @@ public class SocketServiceImpl implements SocketService {
         try {
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).complete(extendedMessageDto);
         }catch (Exception e){
-            log.error("ошибка в отправке запроса на прерывание хода в комнате: " + extendedMessageDto.getRoomName() );
+            log.error("error in sending a request to interrupt the progress in the room: " + extendedMessageDto.getRoomName() );
             log.error(e.getMessage());
         }
     }
@@ -177,7 +186,7 @@ public class SocketServiceImpl implements SocketService {
         try{
             roomService.getRoomByStringId(extendedMessageDto.getRoomName()).surrender(extendedMessageDto);
         }catch (Exception e){
-            log.error("ошибка в отправке запроса на сдачу в комнате: " + extendedMessageDto.getRoomName() );
+            log.error("error in sending a request for rent in a room: " + extendedMessageDto.getRoomName() );
             log.error(e.getMessage());
         }
     }

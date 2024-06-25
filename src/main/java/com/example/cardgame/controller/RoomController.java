@@ -31,34 +31,34 @@ public class RoomController {
     public ResponseEntity<RoomDto> get(@PathVariable String roomName){
         try {
 
-            log.info("Запрос на получение комнаты: " + roomName);
+            log.info("Request for a room: " + roomName);
             return ResponseEntity.ok(roomService.getRoomByStringId(roomName).mapToRoomDto());
         }catch (Exception e ){
-            log.info("Запрос на получение комнаты: " + roomName + "выполнен неудачно");
+            log.info("Request for a room: " + roomName + "failed");
             return ResponseEntity.status(404).build();
         }
     }
 
     @GetMapping("/getAll")
     public List<RoomDto> getAll() {
-        log.info("Запрос на получение всех комнат ");
+        log.info("Request for all rooms ");
         return roomService.getAll();
     }
 
 
     @PostMapping
-    public void createRoom(@RequestBody String roomName){
-        log.info("Запрос на создание комнаты: " + roomName);
-        roomService.addRoom(new Room(roomName, Status.OPEN));
+    public RoomDto createRoom(@RequestBody String roomName){
+        log.info("Request to create a room: " + roomName);
+        return roomService.addRoom(new Room(roomName, Status.OPEN));
     }
 
     @DeleteMapping
     public void deleteRoom(@RequestBody String roomName){
         try{
-            log.info("Запрос на удаление  комнаты: " + roomName);
+            log.info("Request to delete a room: " + roomName);
             roomService.removeRoom(roomName);
         }catch (Exception e){
-            log.info("Запрос на удаление  комнаты: " + roomName + "выполнен неудачно");
+            log.info("Request to delete a room: " + roomName + "failed");
         }
     }
 }

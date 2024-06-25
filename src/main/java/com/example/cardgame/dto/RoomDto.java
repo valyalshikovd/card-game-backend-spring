@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class RoomDto {
+    private String roomId;
     private String roomName;
     private Status status;
     private int countPlayer;

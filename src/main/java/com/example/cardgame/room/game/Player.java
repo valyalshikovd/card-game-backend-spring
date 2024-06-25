@@ -8,16 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+@Setter
+@Getter
 public class Player {
-
-    @Getter
-    @Setter
     private  User user;
-
-    @Getter
-    @Setter
     private List<Card> cards = new ArrayList<>();
-
     public Player(User user) {
         this.user = user;
     }

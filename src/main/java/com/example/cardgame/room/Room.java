@@ -1,6 +1,5 @@
 package com.example.cardgame.room;
 
-
 import com.example.cardgame.dto.RoomDto;
 import com.example.cardgame.dto.message.ExtendedMessageDto;
 import com.example.cardgame.dto.message.SentMessageDto;
@@ -10,16 +9,11 @@ import com.example.cardgame.exception.roomException.RoomException;
 import com.example.cardgame.room.game.GameState;
 import com.example.cardgame.room.game.Player;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +26,8 @@ public class Room {
     @Getter
     @Setter
     private String roomName;
+    @Getter
+    private String roomId;
     private GameState gameState;
     private final ObjectMapper mapper;
 
@@ -39,9 +35,9 @@ public class Room {
         this.roomName = roomName;
         this.status = status;
         this.mapper = new ObjectMapper();
+        this.roomId = roomName.hashCode() + "" +  System.currentTimeMillis();
+        System.out.println(roomId);
     }
-
-
     @Getter
     @Setter
     private Status status;
@@ -60,7 +56,7 @@ public class Room {
     }
 
     public RoomDto mapToRoomDto() {
-        return new RoomDto(roomName, status, users.size());
+        return new RoomDto(roomId, roomName, status, users.size());
     }
 
     public List<User> getUsers() {
@@ -70,14 +66,12 @@ public class Room {
     public boolean checkReady() {
         return getUsers().stream().noneMatch(user -> user.getStatus() != UserStatus.READY) && getUsers().size() >= 2;
     }
-
     public void start() {
         status = Status.STARTED;
         for (User user : getUsers()) {
             sendToUserMessageAboutGameStarted(user);
         }
-        log.info("Успешно отправлены сообщения о начале игры всем игрокам.");
-
+        log.info("Messages about the start of the game have been successfully sent to all players.");
         startRoom();
     }
 
@@ -87,9 +81,9 @@ public class Room {
                     mapper.writeValueAsString(new SentMessageDto("start_game", ""))
             ));
         } catch (Exception e) {
-            log.error("Не удалось отправить сооьщение о старте игрку: " + user.getName());
+            log.error("Failed to send start message to player: " + user.getName());
             deleteUser(user);
-            throw new RoomException("Не удалось отправить сооьщение о старте игрку: " + user.getName());
+            throw new RoomException("Failed to send start message to player: " + user.getName());
         }
     }
 
@@ -102,12 +96,10 @@ public class Room {
             gameState.start();
 
         } catch (Exception e) {
-            log.error("Ошибка запуска игры в комнате " + roomName);
+            log.error("Error starting the game in the room " + roomName);
             log.error(e.getMessage());
         }
     }
-
-    ;
 
     public void getGameState() {
         for (User user : getUsers()) {
@@ -134,33 +126,27 @@ public class Room {
             }catch (Exception e){
                 System.out.println(e.getMessage());
                 deleteUser(user);
-                log.error("Ошибка отправки состояния игры пользователю :" + user.getName());
+                log.error("Error sending game state to user :" + user.getName());
             }
         }
-
     }
 
     public void setStep(GameStepInfoDto gameStepInfoDto, String playersSocketIs){
         gameState.setStep(gameStepInfoDto, playersSocketIs);
-
         getGameState();
     }
 
     public void pullOf(ExtendedMessageDto extendedMessageDto) {
-
         User user = users.get(extendedMessageDto.getSession().getId());
         if(user.getSession().getId().equals(extendedMessageDto.getSession().getId())){
-
             gameState.pullOf(user);
             getGameState();
         }
     }
 
     public void complete(ExtendedMessageDto extendedMessageDto) {
-
         User user = users.get(extendedMessageDto.getSession().getId());
         if(user.getSession().getId().equals(extendedMessageDto.getSession().getId())){
-
             gameState.complete(user);
             getGameState();
         }
@@ -169,7 +155,6 @@ public class Room {
     public void surrender(ExtendedMessageDto extendedMessageDto) {
         User user = users.get(extendedMessageDto.getSession().getId());
         if(user.getSession().getId().equals(extendedMessageDto.getSession().getId())){
-
             gameState.surrender(user);
             getGameState();
         }
@@ -177,18 +162,17 @@ public class Room {
         gameState = null;
     }
 
-    private void deleteUser(User user){
+    public void deleteUser(User user){
         users.remove(user.getSession().getId());
-
         for (User u : getUsers()) {
             try {
                 u.getSession().sendMessage(new TextMessage(
-                        mapper.writeValueAsString(new SentMessageDto("addNotification", "Пользователь " + user.getName() + " был удален"))
+                        mapper.writeValueAsString(new SentMessageDto("addNotification", "Пользователь " + user.getName() + " покинул комнату"))
                 ));
             } catch (Exception e) {
-                log.error("Не удалось отправить сооьщение о старте игрку: " + u.getName());
+                log.error("Failed to send start message to player: " + u.getName());
                 deleteUser(u);
-                throw new RoomException("Не удалось отправить сооьщение о старте игрку: " + u.getName());
+                throw new RoomException("Failed to send start message to player: " + u.getName());
             }
         }
     }
