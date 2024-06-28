@@ -45,7 +45,9 @@ public class SocketServiceImpl implements SocketService {
         runnableMap.put("pullOf", this::pullOf);
         runnableMap.put("complete", this::complete);
         runnableMap.put("surrender", this::surrender);
+        runnableMap.put("leaveFromRoom", this::leaveFromRoom);
     }
+
 
 
     public interface MessageProcessor {
@@ -128,7 +130,7 @@ public class SocketServiceImpl implements SocketService {
             currentRoom
                     .getUser(extendedMessageDto.getSession().getId())
                     .setStatus(UserStatus.UNREADY);
-            emitToAllUserInRoom(currentRoom, new SentMessageDto("addNotification", "Игрок " + extendedMessageDto.getUserName() + "не готов" ));
+            emitToAllUserInRoom(currentRoom, new SentMessageDto("addNotification", "Игрок " + extendedMessageDto.getUserName() +  " не готов" ));
         }catch (Exception e){
             log.info("Ошибка принятия готовности игрока " + extendedMessageDto.getUserName());
         }
@@ -190,6 +192,15 @@ public class SocketServiceImpl implements SocketService {
             log.error(e.getMessage());
         }
     }
-
+    private void leaveFromRoom(ExtendedMessageDto extendedMessageDto) {
+        try {
+            Room room = roomService.getRoomByStringId(extendedMessageDto.getRoomName());
+            room.deleteUser(room.getUser(extendedMessageDto.getSession().getId()));
+            emitToAllUserInRoom(room, new SentMessageDto("addNotification", "Игрок " + extendedMessageDto.getUserName() + " покинул комнату" ));
+        }catch (Exception e){
+            log.error("exit room error: " + extendedMessageDto.getRoomName() );
+            log.error(e.getMessage());
+        }
+    }
 
 }
